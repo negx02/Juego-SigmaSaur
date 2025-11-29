@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SigmaSaur Arcade</title>
+    <!-- Fuente Pixelada Retro -->
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -233,7 +234,8 @@
                 </div>
 
                 <div id="game-over-screen" class="ui-screen hidden">
-                    <h1 style="color: red; font-size: 40px;">GAME OVER</h1>
+                    <!-- GAME OVER MÁS GRANDE (Se mantiene en 70px) -->
+                    <h1 style="color: red; font-size: 70px; margin: 20px 0;">GAME OVER</h1>
                     <div id="new-record-msg" class="hidden" style="color: yellow; margin-bottom: 10px;">¡NUEVO RÉCORD!</div>
                     <p>SCORE: <span id="final-score">0</span></p>
                     <div>
@@ -257,15 +259,6 @@
         </div>
     </div>
 
-    <!-- 
-        === ZONA DE MÚSICA === 
-        1. Pon tu archivo de música (ej: cancion.mp3) en la misma carpeta que este archivo HTML.
-        2. Cambia donde dice "nombre_de_tu_cancion.mp3" por el nombre de tu archivo.
-    -->
-    <audio id="game-music" loop>
-        <source src="nombre_de_tu_cancion.mp3" type="audio/mpeg">
-    </audio>
-
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -275,12 +268,11 @@
         const hiScoreEl = document.getElementById('hi-score-display');
         const finalScoreEl = document.getElementById('final-score');
         const newRecordMsg = document.getElementById('new-record-msg');
-        // Referencia al audio
-        const bgMusic = document.getElementById('game-music');
 
         // Estados del juego
         let gameRunning = false;
-        let gameSpeed = 6;
+        // VELOCIDAD INICIAL AUMENTADA DE 10 A 15 para una sensación de inicio mucho más rápido
+        let gameSpeed = 15;
         let score = 0;
         let highScore = localStorage.getItem('sigmaSaurHi') || 0;
         let frame = 0;
@@ -299,14 +291,14 @@
             width: 50,
             height: 70,
             dy: 0,
-            jumpPower: -13,
-            gravity: 0.7,
+            jumpPower: -20,
+            gravity: 1.5,
             grounded: false,
             crouching: false,
             color: '#39ff14',
             
             draw: function() {
-                // NUEVO DISEÑO DE PERSONAJE
+                // DISEÑO DE PERSONAJE
                 ctx.fillStyle = this.color;
                 
                 if (this.crouching) {
@@ -499,15 +491,10 @@
             gameOverScreen.classList.add('hidden');
             newRecordMsg.classList.add('hidden');
             
-            // INTENTAR REPRODUCIR AUDIO
-            if(bgMusic) {
-                bgMusic.currentTime = 0; // Reiniciar canción
-                bgMusic.play().catch(e => console.log("Audio no iniciado: interacción requerida"));
-            }
-
             gameRunning = true;
             score = 0;
-            gameSpeed = 7;
+            // VELOCIDAD INICIAL REINICIADA A 15 (Inicio rápido)
+            gameSpeed = 15;
             obstacles = [];
             decorations = [];
             spawnTimer = 0;
@@ -524,7 +511,6 @@
 
         function exitGame() {
             if(confirm("¿SALIR DEL JUEGO?")) {
-                if(bgMusic) bgMusic.pause();
                 window.close();
                 document.body.innerHTML = "<div style='color:white; text-align:center;'><h1>SISTEMA APAGADO</h1></div>";
             }
@@ -545,8 +531,6 @@
         function gameOver() {
             gameRunning = false;
             
-            if(bgMusic) bgMusic.pause();
-
             let isNewRecord = false;
             if (score > highScore) {
                 highScore = score;
@@ -594,6 +578,7 @@
             }
 
             score += 0.05;
+            // La velocidad sigue aumentando sutilmente
             gameSpeed += 0.0003; 
             currentScoreEl.innerText = Math.floor(score).toString().padStart(5, '0');
 
@@ -612,8 +597,9 @@
                 const types = ['tronco', 'muro', 'avion', 'avion']; 
                 const randomType = types[Math.floor(Math.random() * types.length)];
                 obstacles.push(new Obstacle(randomType));
-                spawnTimer = (Math.random() * 40 + 50) - (gameSpeed * 1.5);
-                if (spawnTimer < 35) spawnTimer = 35;
+                // Reducir el tiempo entre obstáculos dada la alta velocidad
+                spawnTimer = (Math.random() * 40 + 40) - (gameSpeed * 1.5);
+                if (spawnTimer < 35) spawnTimer = 35; // Mínimo de 35 para evitar obstáculos imposibles
             }
 
             obstacles.forEach((obs, index) => {
@@ -631,7 +617,7 @@
 
         function handleInput(e) {
             if (!gameRunning) {
-                if ((e.code || e.type === 'mousedown') && !startScreen.classList.contains('hidden')) startGame();
+                if ((e.code || e.type === 'mousedown' || e.type === 'touchstart') && !startScreen.classList.contains('hidden')) startGame();
                 return;
             }
             if (e.type === 'keydown') {
@@ -640,8 +626,8 @@
             } else if (e.type === 'keyup') {
                 if (e.code === 'ArrowDown' || e.code === 'KeyS') dino.crouch(false);
             } else if (e.type === 'mousedown' || e.type === 'touchstart') {
-                const clientY = e.clientY || e.touches[0].clientY;
-                if (clientY > window.innerHeight / 2) dino.crouch(true);
+                const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+                if (clientY && clientY > window.innerHeight / 2) dino.crouch(true);
                 else dino.jump();
             } else if (e.type === 'mouseup' || e.type === 'touchend') {
                 dino.crouch(false);
